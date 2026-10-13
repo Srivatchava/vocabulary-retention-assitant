@@ -12,13 +12,13 @@ export function initializeCronJobs() {
   console.log('Initializing cron jobs...');
 
   // Every day at 9 AM, send reminders to users who haven't practiced yet
-//   const reminderJob = cron.schedule('0 9 * * *', async () => {
-//     console.log('[CRON] Running daily practice reminders at 9 AM...');
-//     await sendDailyReminders();
-//   });
+  //   const reminderJob = cron.schedule('0 9 * * *', async () => {
+  //     console.log('[CRON] Running daily practice reminders at 9 AM...');
+  //     await sendDailyReminders();
+  //   });
 
 
-  const reminderJob = cron.schedule('55 22 * * *', async () => {
+  const reminderJob = cron.schedule('47 1 * * *', async () => {
     console.log('[CRON] Running daily practice reminders at 9 AM...');
     await sendDailyReminders();
   });

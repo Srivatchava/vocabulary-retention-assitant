@@ -55,8 +55,8 @@ router.post('/login', async (req, res) => {
     await db.query('UPDATE User SET last_login = ? WHERE id = ?', [new Date(), user.id]);
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-    console.log(token);
-    
+    // console.log(token);
+
     res.json({ token, user: { id: user.id, email: user.email, streak_count: user.streak_count } });
   } catch (error) {
     console.error('Login error:', error);

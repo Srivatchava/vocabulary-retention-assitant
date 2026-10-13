@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 export const authenticate = (req, res, next) => {
+  // console.log('in auth');
   const token = req.header('Authorization')?.replace('Bearer ', '');
 
   if (!token) {
@@ -12,6 +13,8 @@ export const authenticate = (req, res, next) => {
     req.user = decoded; // Contains { id: userId, email: userEmail }
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token.' });
+    // console.log('err in auth');
+
+    return res.status(401).json({ error: 'Invalid or expired token. Please login again' });
   }
 };

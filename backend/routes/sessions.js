@@ -7,32 +7,22 @@ import { markReminderCompleted } from '../services/cronService.js';
 const router = express.Router();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// Familiarity weights — weaker words surface more often
-const WEIGHT = { new: 4, learning: 3, familiar: 2, mastered: 1 };
 const WORDS_PER_PARAGRAPH = 4;
 
-// Weighted random word selection (no duplicates)
-function selectWords(words, count) {
-  if (words.length <= count) return [...words];
-  const pool = words.flatMap((w) =>
-    Array(WEIGHT[w.familiarity_level] ?? 1).fill(w)
-  );
-  const selected = [];
-  const usedIds = new Set();
-  while (selected.length < count && pool.length > 0) {
-    const idx = Math.floor(Math.random() * pool.length);
-    const word = pool[idx];
-    if (!usedIds.has(word.id)) {
-      selected.push(word);
-      usedIds.add(word.id);
-    }
-    pool.splice(idx, 1);
-  }
-  return selected;
+// Priority tier for word selection within a category:
+// Tier 1: Due words (next_review_date <= CURDATE())
+// Tier 2: Unreviewed new words (times_practiced === 0 || familiarity_level === 'new')
+// Tier 3: Words closest to their due date (ranked by urgency)
+function getWordPriority(w) {
+  if (w.is_due) return 1;
+  if (w.times_practiced === 0 || w.familiarity_level === 'new') return 2;
+  return 3;
 }
 
 // Enrich a session row: parse JSON fields + fetch full word objects for words_included
 async function enrichSession(session) {
+  console.log(typeof session.paragraphs);
+
   const paragraphs =
     typeof session.paragraphs === 'string'
       ? JSON.parse(session.paragraphs)
@@ -49,19 +39,32 @@ async function enrichSession(session) {
   let wordMap = {};
   if (allIds.length > 0) {
     const placeholders = allIds.map(() => '?').join(', ');
+    // console.log(placeholders);
+
     const [rows] = await db.query(
-      `SELECT w.id, w.word_text, w.meaning, w.familiarity_level, c.name AS category
+      `SELECT w.id, w.word_text, w.meaning, w.familiarity_level, w.times_practiced, w.times_forgotten, w.next_review_date, c.name AS category
        FROM Word w LEFT JOIN Category c ON w.category_id = c.id
        WHERE w.id IN (${placeholders})`,
       allIds
     );
+
+    // console.log(rows);
+    // const temp = rows.map((r) => [r.id, r]);
+    // console.log(temp);
+
+
     wordMap = Object.fromEntries(rows.map((r) => [r.id, r]));
+    // console.log(wordMap);
+
   }
 
   // Replace ID arrays with full word objects
   const wordsIncluded = wordIdArrays.map((ids) =>
     ids.map((id) => wordMap[id]).filter(Boolean)
   );
+
+  // console.log(wordsIncluded);
+
 
   return {
     id: session.id,
@@ -82,6 +85,7 @@ router.get('/today', authenticate, async (req, res) => {
       'SELECT * FROM Session WHERE user_id = ? AND session_date = ? LIMIT 1',
       [userId, today]
     );
+    // console.log(rows);
 
     if (rows.length === 0) return res.json({ session: null });
 
@@ -93,7 +97,7 @@ router.get('/today', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/session/generate — build and save today's practice session
+// POST /api/session/generate — build and save today's practice session using Adaptive Leitner Category-Aware Batching
 router.post('/generate', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -108,12 +112,17 @@ router.post('/generate', authenticate, async (req, res) => {
       return res.status(409).json({ error: 'Session already generated for today.' });
     }
 
-    // Fetch all user words with category
+    // Fetch all user words with category, urgency score, and due status
+    // Urgency = (TODAY - next_review_date) + (times_forgotten / (times_practiced + 1) * 5)
     const [allWords] = await db.query(
-      `SELECT w.id, w.word_text, w.meaning, w.familiarity_level,
-              c.id AS category_id, c.name AS category
-       FROM Word w JOIN Category c ON w.category_id = c.id
-       WHERE w.user_id = ?`,
+      `SELECT w.id, w.word_text, w.meaning, w.familiarity_level, w.times_practiced, w.times_forgotten, w.next_review_date,
+              w.category_id, c.name AS category,
+              (DATEDIFF(CURDATE(), COALESCE(w.next_review_date, CURDATE())) + (w.times_forgotten / (w.times_practiced + 1) * 5)) AS urgency,
+              (w.next_review_date <= CURDATE() OR w.next_review_date IS NULL) AS is_due
+       FROM Word w
+       JOIN Category c ON w.category_id = c.id
+       WHERE w.user_id = ?
+       ORDER BY (w.next_review_date <= CURDATE() OR w.next_review_date IS NULL) DESC, urgency DESC`,
       [userId]
     );
 
@@ -123,24 +132,74 @@ router.post('/generate', authenticate, async (req, res) => {
       });
     }
 
-    // Group by category
+    // Group words by category and compute category-level statistics
     const categoryMap = {};
     for (const w of allWords) {
-      if (!categoryMap[w.category_id]) {
-        categoryMap[w.category_id] = { name: w.category, words: [] };
+      const catId = w.category_id;
+      const isDue = Boolean(w.is_due);
+      const urgency = parseFloat(w.urgency) || 0;
+      const wordObj = {
+        ...w,
+        is_due: isDue,
+        urgency,
+      };
+
+      if (!categoryMap[catId]) {
+        categoryMap[catId] = {
+          id: catId,
+          name: w.category,
+          words: [],
+          dueWordsCount: 0,
+          newWordsCount: 0,
+          totalUrgency: 0,
+        };
       }
-      categoryMap[w.category_id].words.push(w);
+
+      categoryMap[catId].words.push(wordObj);
+      if (isDue) {
+        categoryMap[catId].dueWordsCount += 1;
+      }
+      if (w.times_practiced === 0 || w.familiarity_level === 'new') {
+        categoryMap[catId].newWordsCount += 1;
+      }
+      categoryMap[catId].totalUrgency += urgency;
     }
 
-    // Shuffle categories and pick up to 3
-    const categories = Object.values(categoryMap).sort(() => Math.random() - 0.5);
-    const chosen = categories.slice(0, 3);
+    // Category-Aware Selection Strategy:
+    // 1. Group by category and pick top up to 3 categories with most due words
+    // 2. Tiebreakers: unreviewed new words count, total urgency, category size
+    const sortedCategories = Object.values(categoryMap).sort((a, b) => {
+      if (b.dueWordsCount !== a.dueWordsCount) {
+        return b.dueWordsCount - a.dueWordsCount;
+      }
+      if (b.newWordsCount !== a.newWordsCount) {
+        return b.newWordsCount - a.newWordsCount;
+      }
+      if (b.totalUrgency !== a.totalUrgency) {
+        return b.totalUrgency - a.totalUrgency;
+      }
+      return b.words.length - a.words.length;
+    });
 
-    // Select words per category (weighted by familiarity)
-    const plan = chosen.map((cat) => ({
-      category: cat.name,
-      words: selectWords(cat.words, WORDS_PER_PARAGRAPH),
-    }));
+    const chosen = sortedCategories.slice(0, 3);
+
+    // Select up to 4 words per category:
+    // - Pick due words first (highest urgency)
+    // - Backfill with unreviewed 'new' words
+    // - Backfill with words closest to their due date (highest urgency)
+    const plan = chosen.map((cat) => {
+      const sortedWords = [...cat.words].sort((a, b) => {
+        const pA = getWordPriority(a);
+        const pB = getWordPriority(b);
+        if (pA !== pB) return pA - pB;
+        return b.urgency - a.urgency;
+      });
+
+      return {
+        category: cat.name,
+        words: sortedWords.slice(0, WORDS_PER_PARAGRAPH),
+      };
+    });
 
     // Build prompt — one call for all paragraphs
     const paragraphLines = plan

@@ -20,9 +20,10 @@ const StatCard = ({ icon: Icon, label, value, iconClass, glowClass }) => (
 );
 
 // ── Interactive Paragraph card ───────────────────────────────────────────────
+//move this to a component ,if needed 
 const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWordClick, onRate }) => {
   const wordChips = words || [];
-  
+
   // Build highlighted paragraph with clickable words
   function buildParagraph() {
     if (!wordChips.length) return [paragraph];
@@ -40,29 +41,30 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
       if (match.index > lastIndex) {
         parts.push(paragraph.slice(lastIndex, match.index));
       }
-      
+
       const matchedWord = match[0];
       const foundWord = wordChips.find(
         (w) => w.word_text.toLowerCase() === matchedWord.toLowerCase()
       );
-      
+
       if (foundWord) {
         const isRevealed = revealedWords[foundWord.id];
         const rating = ratings[foundWord.id];
-        
+
         parts.push(
           <span key={`${foundWord.id}-${match.index}`} className="relative group inline">
             <button
               onClick={() => onWordClick(foundWord.id)}
-              className={`font-semibold underline underline-offset-3 transition-all duration-200 cursor-pointer rounded px-0.5 ${
-                isRevealed
-                  ? 'text-emerald-300 decoration-emerald-500/50'
-                  : 'text-violet-300 decoration-violet-500/50 hover:text-violet-200 hover:decoration-violet-400'
-              }`}
+              className={`font-semibold underline underline-offset-3 transition-all duration-200 cursor-pointer rounded px-0.5 ${ratings[foundWord.id] === 'still_learning'
+                  ? 'text-amber-300 decoration-amber-500/60 bg-amber-500/10'
+                  : isRevealed
+                    ? 'text-emerald-300 decoration-emerald-500/50'
+                    : 'text-violet-300 decoration-violet-500/50 hover:text-violet-200 hover:decoration-violet-400'
+                }`}
             >
               {matchedWord}
             </button>
-            
+
             {/* Tooltip/popup on hover or click */}
             {isRevealed && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-slate-950 border border-slate-700 rounded-lg p-3 shadow-lg z-50 pointer-events-auto whitespace-normal max-w-xs">
@@ -79,35 +81,32 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
                     <X size={14} />
                   </button>
                 </div>
-                
-                {/* Rating buttons */}
+
+                {/* Rating button - Only Still Learning */}
                 {!rating && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRate(foundWord.id, 'got_it');
-                      }}
-                      className="flex-1 text-xs px-2 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 rounded border border-emerald-500/30 transition-colors"
-                    >
-                      Got it!
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRate(foundWord.id, 'still_learning');
-                      }}
-                      className="flex-1 text-xs px-2 py-1 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 rounded border border-amber-500/30 transition-colors"
-                    >
-                      Still learning
-                    </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRate(foundWord.id, 'still_learning');
+                    }}
+                    className="w-full text-xs px-2.5 py-1.5 bg-amber-600/25 hover:bg-amber-600/40 text-amber-300 rounded-lg border border-amber-500/30 transition-all flex items-center justify-center gap-1.5 font-medium hover:border-amber-400/50 cursor-pointer"
+                  >
+                    <Brain size={13} />
+                    Still learning
+                  </button>
+                )}
+
+                {rating === 'still_learning' && (
+                  <div className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-950/40 border border-amber-500/20 rounded px-2.5 py-1">
+                    <Brain size={13} />
+                    Flagged as still learning
                   </div>
                 )}
-                
-                {rating && (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <CheckCircle2 size={13} className="text-emerald-500" />
-                    {rating === 'got_it' ? 'Marked as known' : 'Marked for review'}
+
+                {rating === 'got_it' && (
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 rounded px-2.5 py-1">
+                    <CheckCircle2 size={13} />
+                    Marked as known (Got it)
                   </div>
                 )}
               </div>
@@ -138,16 +137,20 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
           <div className="flex flex-wrap justify-end gap-1.5">
             {wordChips.map((w) => {
               const rating = ratings[w.id];
+              const isStillLearning = rating === 'still_learning';
+              const isGotIt = rating === 'got_it';
               return (
                 <span
                   key={w.id}
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
-                    rating
-                      ? 'bg-emerald-900/30 text-emerald-300'
-                      : 'bg-violet-900/30 text-violet-300'
-                  }`}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${isStillLearning
+                      ? 'bg-amber-950/50 text-amber-300 border border-amber-500/40'
+                      : isGotIt
+                        ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-violet-900/30 text-violet-300'
+                    }`}
                 >
                   {w.word_text}
+                  {isStillLearning && ' · Learning'}
                 </span>
               );
             })}
@@ -157,7 +160,7 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
 
       {/* Paragraph text with highlighted words */}
       <p className="text-sm leading-7 text-slate-300">{buildParagraph()}</p>
-      
+
       <div className="text-xs text-slate-500 pt-2">
         Click highlighted words to reveal meanings
       </div>
@@ -167,10 +170,10 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
 
 // ── Main Home page ───────────────────────────────────────────────────────────
 const Home = () => {
-  const { user, setUser ,token} = useContext(AuthContext);
+  const { user, setUser, token } = useContext(AuthContext);
 
   // console.log(token);
-  
+
 
   const [stats, setStats] = useState({ total: 0, learning: 0, mastered: 0 });
   const [session, setSession] = useState(null);
@@ -208,7 +211,7 @@ const Home = () => {
       setSession(sessionRes.data.session);
       setSessionLoaded(true);
     } catch (err) {
-      console.error('Failed to load home data:', err);
+      console.error('Failed to load home data:', err.response?.data?.error);
       setStatsLoaded(true);
       setSessionLoaded(true);
     }
@@ -234,6 +237,7 @@ const Home = () => {
   };
 
   // Handle clicking on a word to reveal its meaning
+  //need to change this
   const handleWordClick = (wordId) => {
     setRevealedWords((prev) => ({
       ...prev,
@@ -272,16 +276,46 @@ const Home = () => {
     setCompletionSuccess(false);
 
     try {
+      // Find all unique words in the session
+      const uniqueWords = [];
+      const seenIds = new Set();
+      for (const w of allWords) {
+        if (w && w.id && !seenIds.has(w.id)) {
+          seenIds.add(w.id);
+          uniqueWords.push(w);
+        }
+      }
+
+      // Filter for words not rated yet (i.e. not marked still_learning)
+      const unratedWords = uniqueWords.filter((w) => !ratings[w.id]);
+
+      // Automatically rate all unrated words as 'got_it'
+      if (unratedWords.length > 0) {
+        await Promise.all(
+          unratedWords.map((w) =>
+            axios.patch(`http://localhost:5000/api/words/${w.id}/rate`, {
+              rating: 'got_it',
+            })
+          )
+        );
+
+        // Update local ratings state
+        setRatings((prev) => {
+          const updated = { ...prev };
+          unratedWords.forEach((w) => {
+            updated[w.id] = 'got_it';
+          });
+          return updated;
+        });
+      }
+
       const res = await axios.patch(
         `http://localhost:5000/api/session/${session.id}/complete`
       );
-      
+
       // Update session status
       setSession(res.data.session);
-      
 
-      console.log(res.data.streak_incremented);
-      
       // Update user's streak if it was incremented
       if (res.data.streak_incremented && user) {
         setUser({
@@ -289,8 +323,10 @@ const Home = () => {
           streak_count: (user.streak_count || 0) + 1,
         });
       }
-      
+
       setCompletionSuccess(true);
+      // Refresh stats counters
+      loadData();
     } catch (err) {
       setCompletionError(
         err.response?.data?.error || 'Failed to complete session. Please try again.'
@@ -351,7 +387,7 @@ const Home = () => {
         </div>
 
         {/* Quick links to History and Stats */}
-        <div className="flex gap-3 justify-center">
+        {/* <div className="flex gap-3 justify-center">
           <Link
             to="/history"
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700/60 hover:border-slate-600 hover:bg-slate-800 text-slate-300 hover:text-white transition-all text-sm font-medium"
@@ -366,7 +402,7 @@ const Home = () => {
             <BarChart3 size={16} />
             View Stats
           </Link>
-        </div>
+        </div> */}
 
         {/* Session area */}
         {isLoading && (
@@ -445,8 +481,8 @@ const Home = () => {
               </div>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-medium ${session.completion_status
-                    ? 'bg-emerald-900/30 text-emerald-400'
-                    : 'bg-slate-700 text-slate-400'
+                  ? 'bg-emerald-900/30 text-emerald-400'
+                  : 'bg-slate-700 text-slate-400'
                   }`}
               >
                 {session.completion_status ? '✓ Completed' : 'In progress'}
@@ -475,25 +511,23 @@ const Home = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-semibold text-white">
-                      Practice Progress
+                      Practice Session
                     </h3>
                     <p className="mt-1 text-xs text-slate-400">
-                      Click words to reveal meanings and rate them — optional but helpful for spaced repetition
+                      Finished reading? Unflagged words will automatically be marked as understood (<span className="text-emerald-400 font-medium">Got it!</span>).
                     </p>
                   </div>
-                  <span className="text-xs font-bold text-violet-400">
-                    {Object.keys(ratings).length} / {allWords.length} rated
-                  </span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="h-2 rounded-full bg-slate-700/50 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-300"
-                    style={{
-                      width: `${allWords.length > 0 ? (Object.keys(ratings).length / allWords.length) * 100 : 0}%`,
-                    }}
-                  />
+                  <div>
+                    {Object.values(ratings).filter((r) => r === 'still_learning').length > 0 ? (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300">
+                        {Object.values(ratings).filter((r) => r === 'still_learning').length} flagged for review
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300">
+                        All words understood
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {completionError && (
@@ -506,19 +540,19 @@ const Home = () => {
                 {completionSuccess && (
                   <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-900/20 p-3 text-sm text-emerald-300">
                     <CheckCircle2 size={15} className="mt-0.5 shrink-0" />
-                    Session completed! Keep up the streak! 🔥
+                    Session completed! Unflagged words marked as known. Keep up the streak! 🔥
                   </div>
                 )}
 
                 <button
                   onClick={handleCompleteSession}
-                  disabled={     completingSession || session.completion_status}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={completingSession || session.completion_status}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {completingSession ? (
                     <>
                       <Loader2 size={15} className="animate-spin" />
-                      Completing…
+                      Saving ratings & completing…
                     </>
                   ) : (
                     <>

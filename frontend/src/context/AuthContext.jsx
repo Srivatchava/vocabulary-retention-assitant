@@ -11,9 +11,9 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
 
     // console.log("token-use effect"+token);
-    
+
     const userData = localStorage.getItem('user');
-    
+
     if (token && userData) {
       setUser(JSON.parse(userData));
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Update localStorage whenever user changes (for streak updates)
+  //dbt
   useEffect(() => {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));

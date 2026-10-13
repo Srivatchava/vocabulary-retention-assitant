@@ -106,10 +106,11 @@ router.post('/confirm', authenticate, async (req, res) => {
     }
 
     // Insert confirmed word
+    const today = new Date().toISOString().split('T')[0];
     const [wordResult] = await db.query(
-      `INSERT INTO Word (user_id, category_id, word_text, context, meaning, familiarity_level, times_practiced, times_forgotten, created_at)
-       VALUES (?, ?, ?, ?, ?, 'new', 0, 0, NOW())`,
-      [userId, categoryId, word_text.trim(), context?.trim() || null, meaning.trim()]
+      `INSERT INTO Word (user_id, category_id, word_text, context, meaning, familiarity_level, times_practiced, times_forgotten, next_review_date, created_at)
+       VALUES (?, ?, ?, ?, ?, 'new', 0, 0, ?, NOW())`,
+      [userId, categoryId, word_text.trim(), context?.trim() || null, meaning.trim(), today]
     );
 
     res.status(201).json({
@@ -123,6 +124,7 @@ router.post('/confirm', authenticate, async (req, res) => {
         familiarity_level: 'new',
         times_practiced: 0,
         times_forgotten: 0,
+        next_review_date: today,
       },
     });
   } catch (error) {
@@ -137,7 +139,7 @@ router.get('/', authenticate, async (req, res) => {
     const userId = req.user.id;
     const [words] = await db.query(
       `SELECT w.id, w.word_text, w.context, w.meaning, w.familiarity_level,
-              w.times_practiced, w.times_forgotten, w.created_at,
+              w.times_practiced, w.times_forgotten, w.next_review_date, w.last_practiced_date, w.created_at,
               c.id AS category_id, c.name AS category
        FROM Word w
        LEFT JOIN Category c ON w.category_id = c.id
@@ -145,6 +147,8 @@ router.get('/', authenticate, async (req, res) => {
        ORDER BY w.created_at DESC`,
       [userId]
     );
+    // console.log(words);
+
     res.json({ words });
   } catch (error) {
     console.error('Get words error:', error);
@@ -152,7 +156,7 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
-// PATCH /api/words/:id/rate — Rate a word (got it or still learning)
+// PATCH /api/words/:id/rate — Rate a word (got it or still learning) using Adaptive Leitner System
 router.patch('/:id/rate', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
@@ -174,11 +178,28 @@ router.patch('/:id/rate', authenticate, async (req, res) => {
     }
 
     const word = words[0];
-    let newFamiliarity = word.familiarity_level;
-    let newTimesPracticed = word.times_practiced + 1;
-    let newTimesForgotten = word.times_forgotten;
 
-    // Update familiarity based on rating
+    const INTERVALS = {
+      new: 1,
+      learning: 3,
+      familiar: 7,
+      mastered: 21,
+    };
+
+    let newFamiliarity = word.familiarity_level;
+    let intervalDays = 1;
+    const newTimesPracticed = (word.times_practiced || 0) + 1;
+    let newTimesForgotten = word.times_forgotten || 0;
+
+    // Adaptive Leitner state transitions:
+    // Case A: got_it (Success)
+    //   new -> learning (+3 days)
+    //   learning -> familiar (+7 days)
+    //   familiar -> mastered (+21 days)
+    //   mastered -> mastered (+21 days)
+    // Case B: still_learning (Memory lapse)
+    //   mastered/familiar -> learning (+1 day)
+    //   learning/new -> new (+1 day)
     if (rating === 'got_it') {
       if (word.familiarity_level === 'new') {
         newFamiliarity = 'learning';
@@ -186,25 +207,46 @@ router.patch('/:id/rate', authenticate, async (req, res) => {
         newFamiliarity = 'familiar';
       } else if (word.familiarity_level === 'familiar') {
         newFamiliarity = 'mastered';
+      } else if (word.familiarity_level === 'mastered') {
+        newFamiliarity = 'mastered';
       }
-    } else if (rating === 'still_learning') {
-      newTimesForgotten = word.times_forgotten + 1;
-      // Keep familiarity as is (user needs more practice)
+      intervalDays = INTERVALS[newFamiliarity] || 21;
+    } else {
+      newTimesForgotten += 1;
+      if (word.familiarity_level === 'mastered' || word.familiarity_level === 'familiar') {
+        newFamiliarity = 'learning';
+      } else {
+        newFamiliarity = 'new';
+      }
+      intervalDays = 1; // Retest tomorrow
     }
 
-    // Update word in DB
+    // Compute next review date
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + intervalDays);
+    const nextReviewDate = nextDate.toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
+
+    // Update word in DB
     await db.query(
-      `UPDATE Word SET times_practiced = ?, times_forgotten = ?, familiarity_level = ?, last_practiced_date = ? WHERE id = ?`,
-      [newTimesPracticed, newTimesForgotten, newFamiliarity, today, id]
+      `UPDATE Word 
+       SET times_practiced = ?, 
+           times_forgotten = ?, 
+           familiarity_level = ?, 
+           last_practiced_date = ?, 
+           next_review_date = ? 
+       WHERE id = ? AND user_id = ?`,
+      [newTimesPracticed, newTimesForgotten, newFamiliarity, today, nextReviewDate, id, userId]
     );
 
     res.json({
       word: {
-        id,
+        id: Number(id),
         times_practiced: newTimesPracticed,
         times_forgotten: newTimesForgotten,
         familiarity_level: newFamiliarity,
+        last_practiced_date: today,
+        next_review_date: nextReviewDate,
       },
     });
   } catch (error) {

@@ -8,7 +8,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -16,17 +16,17 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       const response = await axios.post('http://localhost:5000/api/auth/login', {
         email,
         password
       });
-      
+
       login(response.data.token, response.data.user);
 
-      console.log(response.data.token);
-      
+      // console.log(response.data.token);
+
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to login');
@@ -42,7 +42,7 @@ const Login = () => {
           <h2 className="text-3xl font-extrabold text-white">Welcome back</h2>
           <p className="mt-2 text-sm text-slate-400">Log in to your Vocabulary Assistant</p>
         </div>
-        
+
         {error && (
           <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg text-center">
             {error}
@@ -83,7 +83,7 @@ const Login = () => {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
-        
+
         <p className="text-center text-sm text-slate-400">
           Don't have an account?{' '}
           <Link to="/signup" className="font-medium text-blue-500 hover:text-blue-400 transition-colors">

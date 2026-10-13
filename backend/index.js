@@ -34,7 +34,7 @@ app.get('/api/health', (req, res) => {
 app.post('/api/admin/trigger-reminders', authenticate, async (req, res) => {
   // Optional: add admin check here
   try {
-    await triggerRemindersNow();  
+    await triggerRemindersNow();
     res.json({ message: 'Reminders triggered successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to trigger reminders' });

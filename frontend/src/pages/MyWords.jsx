@@ -20,7 +20,7 @@ const MyWords = () => {
         const res = await axios.get('http://localhost:5000/api/words');
         setWords(res.data.words || []);
       } catch (err) {
-        setError('Failed to load words. Please refresh.');
+        setError(`Failed to load words. ${err.response?.data?.error}`);
       } finally {
         setLoading(false);
       }
@@ -107,11 +107,10 @@ const MyWords = () => {
                 <button
                   key={tab}
                   onClick={() => setSelectedFamiliarity(tab)}
-                  className={`rounded-lg px-3 py-1 text-xs font-medium transition-all duration-200 ${
-                    selectedFamiliarity === tab
-                      ? 'bg-violet-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
+                  className={`rounded-lg px-3 py-1 text-xs font-medium transition-all duration-200 ${selectedFamiliarity === tab
+                    ? 'bg-violet-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                    }`}
                 >
                   {tab}
                 </button>
