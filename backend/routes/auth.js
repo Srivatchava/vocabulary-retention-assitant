@@ -14,14 +14,14 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ error: 'Name, email, and password are required' });
     }
 
-    const [existingUsers] = await db.query('SELECT * FROM User WHERE email = ?', [email]);
+    const [existingUsers] = await db.query('SELECT * FROM user WHERE email = ?', [email]);
     const existingUser = existingUsers[0];
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const [result] = await db.query('INSERT INTO User (name, email, password_hash) VALUES (?, ?, ?)', [name, email, password_hash]);
+    const [result] = await db.query('INSERT INTO user (name, email, password_hash) VALUES (?, ?, ?)', [name, email, password_hash]);
     const user = { id: result.insertId, name, email };
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
@@ -40,7 +40,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const [users] = await db.query('SELECT * FROM User WHERE email = ?', [email]);
+    const [users] = await db.query('SELECT * FROM user WHERE email = ?', [email]);
     const user = users[0];
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -52,7 +52,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Update last login
-    await db.query('UPDATE User SET last_login = ? WHERE id = ?', [new Date(), user.id]);
+    await db.query('UPDATE user SET last_login = ? WHERE id = ?', [new Date(), user.id]);
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
     // console.log(token);

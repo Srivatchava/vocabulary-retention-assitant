@@ -7,12 +7,14 @@ import sessionRoutes from './routes/sessions.js';
 import { authenticate } from './middleware/auth.js';
 import { initializeCronJobs, triggerRemindersNow } from './services/cronService.js';
 
+import db from './db.js';
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors());//NEED TO UPDATE THIS
 app.use(express.json());
 
 // Routes
@@ -41,8 +43,29 @@ app.post('/api/admin/trigger-reminders', authenticate, async (req, res) => {
   }
 });
 
+app.get('/db-ping', async (req, res) => {
+  const start = Date.now();
+
+  try {
+    await db.query('SELECT 1');
+
+    const latency = Date.now() - start;
+
+    res.json({
+      status: 'connected',
+      database: 'Aiven MySQL',
+      responseTime: `${latency} ms`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'failed',
+      error: error.code || error.message,
+    });
+  }
+});
+
 // Initialize cron jobs
-initializeCronJobs();
+// initializeCronJobs();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

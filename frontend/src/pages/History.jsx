@@ -5,7 +5,7 @@ import { Calendar, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-r
 import { Link } from 'react-router-dom';
 
 const History = () => {
-//   const { token } = useContext(AuthContext);
+  //   const { token } = useContext(AuthContext);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +29,8 @@ const History = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString + 'T00:00:00');
+    const date = new Date(dateString);
+    // console.log(date);
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
       year: 'numeric',
@@ -49,7 +50,7 @@ const History = () => {
     );
   }
 
-  
+
 
   return (
     <div className="min-h-screen bg-slate-900 p-8">
@@ -111,13 +112,14 @@ const History = () => {
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-semibold text-white">
                           {formatDate(session.session_date)}
+                          {/* {console.log(session.session_date) }*/}
+
                         </h3>
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            session.completion_status
-                              ? 'bg-emerald-500/20 text-emerald-300'
-                              : 'bg-amber-500/20 text-amber-300'
-                          }`}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${session.completion_status
+                            ? 'bg-emerald-500/20 text-emerald-300'
+                            : 'bg-amber-500/20 text-amber-300'
+                            }`}
                         >
                           {session.completion_status ? 'Completed' : 'Incomplete'}
                         </span>

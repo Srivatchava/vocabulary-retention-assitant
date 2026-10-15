@@ -42,8 +42,8 @@ async function sendDailyReminders() {
     // Get all users who haven't completed a session today
     const [users] = await db.query(`
       SELECT DISTINCT u.id, u.email, u.name
-      FROM User u
-      LEFT JOIN Session s ON u.id = s.user_id AND s.session_date = ?
+      FROM user u
+      LEFT JOIN session s ON u.id = s.user_id AND s.session_date = ?
       WHERE s.id IS NULL OR s.completion_status = false
     `, [today]);
 
@@ -65,7 +65,7 @@ async function sendDailyReminders() {
           successCount++;
           // Update reminder table
           await db.query(`
-            INSERT INTO Reminder (user_id, reminder_date, reminder_sent, practice_completed)
+            INSERT INTO reminder (user_id, reminder_date, reminder_sent, practice_completed)
             VALUES (?, ?, true, false)
             ON DUPLICATE KEY UPDATE reminder_sent = true
           `, [user.id, today]);
@@ -94,7 +94,7 @@ async function sendDailyReminders() {
 export async function markReminderCompleted(userId, date) {
   try {
     await db.query(`
-      UPDATE Reminder
+      UPDATE reminder
       SET practice_completed = true
       WHERE user_id = ? AND reminder_date = ?
     `, [userId, date]);

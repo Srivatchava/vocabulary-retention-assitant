@@ -21,7 +21,7 @@ function getWordPriority(w) {
 
 // Enrich a session row: parse JSON fields + fetch full word objects for words_included
 async function enrichSession(session) {
-  console.log(typeof session.paragraphs);
+  // console.log(typeof session.paragraphs);
 
   const paragraphs =
     typeof session.paragraphs === 'string'
@@ -43,7 +43,7 @@ async function enrichSession(session) {
 
     const [rows] = await db.query(
       `SELECT w.id, w.word_text, w.meaning, w.familiarity_level, w.times_practiced, w.times_forgotten, w.next_review_date, c.name AS category
-       FROM Word w LEFT JOIN Category c ON w.category_id = c.id
+       FROM word w LEFT JOIN category c ON w.category_id = c.id
        WHERE w.id IN (${placeholders})`,
       allIds
     );
@@ -82,7 +82,7 @@ router.get('/today', authenticate, async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
 
     const [rows] = await db.query(
-      'SELECT * FROM Session WHERE user_id = ? AND session_date = ? LIMIT 1',
+      'SELECT * FROM session WHERE user_id = ? AND session_date = ? LIMIT 1',
       [userId, today]
     );
     // console.log(rows);
@@ -105,7 +105,7 @@ router.post('/generate', authenticate, async (req, res) => {
 
     // Guard: don't regenerate if session already exists today
     const [existing] = await db.query(
-      'SELECT id FROM Session WHERE user_id = ? AND session_date = ? LIMIT 1',
+      'SELECT id FROM session WHERE user_id = ? AND session_date = ? LIMIT 1',
       [userId, today]
     );
     if (existing.length > 0) {
@@ -119,8 +119,8 @@ router.post('/generate', authenticate, async (req, res) => {
               w.category_id, c.name AS category,
               (DATEDIFF(CURDATE(), COALESCE(w.next_review_date, CURDATE())) + (w.times_forgotten / (w.times_practiced + 1) * 5)) AS urgency,
               (w.next_review_date <= CURDATE() OR w.next_review_date IS NULL) AS is_due
-       FROM Word w
-       JOIN Category c ON w.category_id = c.id
+       FROM word w
+       JOIN category c ON w.category_id = c.id
        WHERE w.user_id = ?
        ORDER BY (w.next_review_date <= CURDATE() OR w.next_review_date IS NULL) DESC, urgency DESC`,
       [userId]
@@ -252,7 +252,7 @@ Respond ONLY with valid JSON — no markdown, no explanation:
     const wordsIncludedIds = plan.map((p) => p.words.map((w) => w.id));
 
     const [result] = await db.query(
-      `INSERT INTO Session (user_id, session_date, paragraphs, words_included, completion_status, created_at)
+      `INSERT INTO session (user_id, session_date, paragraphs, words_included, completion_status, created_at)
        VALUES (?, ?, ?, ?, false, NOW())`,
       [userId, today, JSON.stringify(paragraphs), JSON.stringify(wordsIncludedIds)]
     );
@@ -287,7 +287,7 @@ router.patch('/:id/complete', authenticate, async (req, res) => {
 
     // Verify session exists and belongs to user
     const [sessions] = await db.query(
-      'SELECT * FROM Session WHERE id = ? AND user_id = ?',
+      'SELECT * FROM session WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
@@ -299,7 +299,7 @@ router.patch('/:id/complete', authenticate, async (req, res) => {
 
     // Mark session as complete
     await db.query(
-      'UPDATE Session SET completion_status = true WHERE id = ?',
+      'UPDATE session SET completion_status = true WHERE id = ?',
       [id]
     );
 
@@ -309,7 +309,7 @@ router.patch('/:id/complete', authenticate, async (req, res) => {
     if (!wasCompleted) {
       // Get user's current streak
       const [users] = await db.query(
-        'SELECT streak_count FROM User WHERE id = ?',
+        'SELECT streak_count FROM user WHERE id = ?',
         [userId]
       );
       const currentStreak = users[0].streak_count || 0;
@@ -321,12 +321,12 @@ router.patch('/:id/complete', authenticate, async (req, res) => {
       if (sessionDate === today) {
         // Increment streak
         await db.query(
-          'UPDATE User SET streak_count = ? WHERE id = ?',
+          'UPDATE user SET streak_count = ? WHERE id = ?',
           [currentStreak + 1, userId]
         );
 
         // Mark reminder as completed for today
-        await markReminderCompleted(userId, today);
+        // await markReminderCompleted(userId, today);
       }
     }
 
@@ -344,7 +344,7 @@ router.get('/history', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
     const [sessions] = await db.query(
-      'SELECT * FROM Session WHERE user_id = ? ORDER BY session_date DESC LIMIT 30',
+      'SELECT * FROM session WHERE user_id = ? ORDER BY session_date DESC LIMIT 30',
       [userId]
     );
 
@@ -363,7 +363,7 @@ router.get('/stats', authenticate, async (req, res) => {
 
     // Get user data (streak)
     const [users] = await db.query(
-      'SELECT id, email, streak_count, created_at FROM User WHERE id = ?',
+      'SELECT id, email, streak_count, created_at FROM user WHERE id = ?',
       [userId]
     );
 
@@ -380,7 +380,7 @@ router.get('/stats', authenticate, async (req, res) => {
         COUNT(*) as count,
         AVG(times_practiced) as avg_practiced,
         AVG(times_forgotten) as avg_forgotten
-       FROM Word
+       FROM word
        WHERE user_id = ?
        GROUP BY familiarity_level`,
       [userId]
@@ -398,7 +398,7 @@ router.get('/stats', authenticate, async (req, res) => {
 
     // Get total word count
     const [totalWords] = await db.query(
-      'SELECT COUNT(*) as total FROM Word WHERE user_id = ?',
+      'SELECT COUNT(*) as total FROM word WHERE user_id = ?',
       [userId]
     );
 
@@ -407,8 +407,8 @@ router.get('/stats', authenticate, async (req, res) => {
       `SELECT 
         c.name,
         COUNT(w.id) as word_count
-       FROM Category c
-       LEFT JOIN Word w ON c.id = w.category_id
+       FROM category c
+       LEFT JOIN word w ON c.id = w.category_id
        WHERE c.user_id = ?
        GROUP BY c.id, c.name
        ORDER BY word_count DESC`,
@@ -421,7 +421,7 @@ router.get('/stats', authenticate, async (req, res) => {
         COUNT(*) as total_sessions,
         SUM(CASE WHEN completion_status = true THEN 1 ELSE 0 END) as completed_sessions,
         ROUND(AVG(CASE WHEN completion_status = true THEN 1 ELSE 0 END) * 100, 2) as completion_rate
-       FROM Session
+       FROM session
        WHERE user_id = ?`,
       [userId]
     );
@@ -431,7 +431,7 @@ router.get('/stats', authenticate, async (req, res) => {
       `SELECT 
         session_date,
         completion_status
-       FROM Session
+       FROM session
        WHERE user_id = ?
        AND session_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
        ORDER BY session_date DESC`,

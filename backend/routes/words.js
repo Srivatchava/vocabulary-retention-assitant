@@ -18,7 +18,7 @@ router.post('/preview', authenticate, async (req, res) => {
 
     // Fetch user's existing categories to help AI pick the right one
     const [categories] = await db.query(
-      'SELECT id, name FROM Category WHERE user_id = ?',
+      'SELECT id, name FROM category WHERE user_id = ?',
       [userId]
     );
     const categoryNames = categories.map((c) => c.name);
@@ -86,7 +86,7 @@ router.post('/confirm', authenticate, async (req, res) => {
 
     // Fetch existing categories to find or create
     const [categories] = await db.query(
-      'SELECT id, name FROM Category WHERE user_id = ?',
+      'SELECT id, name FROM category WHERE user_id = ?',
       [userId]
     );
 
@@ -99,7 +99,7 @@ router.post('/confirm', authenticate, async (req, res) => {
       categoryId = existingCategory.id;
     } else {
       const [result] = await db.query(
-        'INSERT INTO Category (user_id, name, created_at) VALUES (?, ?, NOW())',
+        'INSERT INTO category (user_id, name, created_at) VALUES (?, ?, NOW())',
         [userId, category.trim()]
       );
       categoryId = result.insertId;
@@ -108,7 +108,7 @@ router.post('/confirm', authenticate, async (req, res) => {
     // Insert confirmed word
     const today = new Date().toISOString().split('T')[0];
     const [wordResult] = await db.query(
-      `INSERT INTO Word (user_id, category_id, word_text, context, meaning, familiarity_level, times_practiced, times_forgotten, next_review_date, created_at)
+      `INSERT INTO word (user_id, category_id, word_text, context, meaning, familiarity_level, times_practiced, times_forgotten, next_review_date, created_at)
        VALUES (?, ?, ?, ?, ?, 'new', 0, 0, ?, NOW())`,
       [userId, categoryId, word_text.trim(), context?.trim() || null, meaning.trim(), today]
     );
@@ -141,8 +141,8 @@ router.get('/', authenticate, async (req, res) => {
       `SELECT w.id, w.word_text, w.context, w.meaning, w.familiarity_level,
               w.times_practiced, w.times_forgotten, w.next_review_date, w.last_practiced_date, w.created_at,
               c.id AS category_id, c.name AS category
-       FROM Word w
-       LEFT JOIN Category c ON w.category_id = c.id
+       FROM word w
+       LEFT JOIN category c ON w.category_id = c.id
        WHERE w.user_id = ?
        ORDER BY w.created_at DESC`,
       [userId]
@@ -169,7 +169,7 @@ router.patch('/:id/rate', authenticate, async (req, res) => {
 
     // Fetch the word to verify ownership
     const [words] = await db.query(
-      'SELECT * FROM Word WHERE id = ? AND user_id = ?',
+      'SELECT * FROM word WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
@@ -229,7 +229,7 @@ router.patch('/:id/rate', authenticate, async (req, res) => {
 
     // Update word in DB
     await db.query(
-      `UPDATE Word 
+      `UPDATE word 
        SET times_practiced = ?, 
            times_forgotten = ?, 
            familiarity_level = ?, 

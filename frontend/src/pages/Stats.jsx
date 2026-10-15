@@ -7,7 +7,7 @@ import {
 import { Link } from 'react-router-dom';
 
 const Stats = () => {
-//   const { token } = useContext(AuthContext);
+  //   const { token } = useContext(AuthContext);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -205,14 +205,13 @@ const Stats = () => {
                     {stats.recent_activity.map((day, idx) => (
                       <div
                         key={idx}
-                        className={`w-10 h-10 rounded flex items-center justify-center text-xs font-medium transition-all hover:scale-110 ${
-                          day.completed
-                            ? 'bg-emerald-500/30 border border-emerald-500 text-emerald-300'
-                            : 'bg-slate-700/30 border border-slate-600 text-slate-500'
-                        }`}
+                        className={`w-10 h-10 rounded flex items-center justify-center text-xs font-medium transition-all hover:scale-110 ${day.completed
+                          ? 'bg-emerald-500/30 border border-emerald-500 text-emerald-300'
+                          : 'bg-slate-700/30 border border-slate-600 text-slate-500'
+                          }`}
                         title={`${day.date}: ${day.completed ? 'Completed' : 'Skipped'}`}
                       >
-                        {new Date(day.date + 'T00:00:00').getDate()}
+                        {new Date(day.date).getDate()}
                       </div>
                     ))}
                   </div>
