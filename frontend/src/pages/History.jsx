@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api.js'
 import { AuthContext } from '../context/AuthContext';
 import { Calendar, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -18,7 +18,7 @@ const History = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get('http://localhost:5000/api/session/history');
+      const response = await api.get('/api/session/history');
       setSessions(response.data.sessions || []);
     } catch (err) {
       console.error('Error fetching history:', err);

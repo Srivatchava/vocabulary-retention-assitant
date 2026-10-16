@@ -6,6 +6,8 @@ import WordCard from '../components/WordCard';
 
 const FAMILIARITY_TABS = ['All', 'New', 'Learning', 'Familiar', 'Mastered'];
 
+import api from '../services/api.js'
+
 const MyWords = () => {
   const [words, setWords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,7 @@ const MyWords = () => {
   useEffect(() => {
     const fetchWords = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/words');
+        const res = await api.get('/api/words');
         setWords(res.data.words || []);
       } catch (err) {
         setError(`Failed to load words. ${err.response?.data?.error}`);

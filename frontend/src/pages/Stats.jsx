@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import api from '../services/api.js';
 const Stats = () => {
   //   const { token } = useContext(AuthContext);
   const [stats, setStats] = useState(null);
@@ -20,7 +21,7 @@ const Stats = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get('http://localhost:5000/api/session/stats');
+      const response = await api.get('/api/session/stats');
       setStats(response.data);
     } catch (err) {
       console.error('Error fetching stats:', err);

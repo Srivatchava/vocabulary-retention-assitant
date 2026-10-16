@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+
+import api from '../services/api.js';
+
 import {
   Flame, Brain, Trophy, Sparkles, Loader2,
   RefreshCw, PlusCircle, BookOpen, ChevronRight, CheckCircle2, AlertCircle, X, BarChart3, History,
@@ -56,10 +58,10 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
             <button
               onClick={() => onWordClick(foundWord.id)}
               className={`font-semibold underline underline-offset-3 transition-all duration-200 cursor-pointer rounded px-0.5 ${ratings[foundWord.id] === 'still_learning'
-                  ? 'text-amber-300 decoration-amber-500/60 bg-amber-500/10'
-                  : isRevealed
-                    ? 'text-emerald-300 decoration-emerald-500/50'
-                    : 'text-violet-300 decoration-violet-500/50 hover:text-violet-200 hover:decoration-violet-400'
+                ? 'text-amber-300 decoration-amber-500/60 bg-amber-500/10'
+                : isRevealed
+                  ? 'text-emerald-300 decoration-emerald-500/50'
+                  : 'text-violet-300 decoration-violet-500/50 hover:text-violet-200 hover:decoration-violet-400'
                 }`}
             >
               {matchedWord}
@@ -143,10 +145,10 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
                 <span
                   key={w.id}
                   className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${isStillLearning
-                      ? 'bg-amber-950/50 text-amber-300 border border-amber-500/40'
-                      : isGotIt
-                        ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-violet-900/30 text-violet-300'
+                    ? 'bg-amber-950/50 text-amber-300 border border-amber-500/40'
+                    : isGotIt
+                      ? 'bg-emerald-950/50 text-emerald-300 border border-emerald-500/40'
+                      : 'bg-violet-900/30 text-violet-300'
                     }`}
                 >
                   {w.word_text}
@@ -194,8 +196,8 @@ const Home = () => {
   const loadData = useCallback(async () => {
     try {
       const [wordsRes, sessionRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/words'),
-        axios.get('http://localhost:5000/api/session/today'),
+        api.get('/api/words'),
+        api.get('/api/session/today'),
       ]);
 
       const words = wordsRes.data.words || [];
@@ -225,7 +227,7 @@ const Home = () => {
     setGenerating(true);
     setGenError('');
     try {
-      const res = await axios.post('http://localhost:5000/api/session/generate');
+      const res = await api.post('/api/session/generate');
       setSession(res.data.session);
     } catch (err) {
       setGenError(
@@ -249,7 +251,7 @@ const Home = () => {
   const handleRate = async (wordId, rating) => {
     setRatingLoading((prev) => ({ ...prev, [wordId]: true }));
     try {
-      await axios.patch(`http://localhost:5000/api/words/${wordId}/rate`, {
+      await api.patch(`/api/words/${wordId}/rate`, {
         rating,
       });
       setRatings((prev) => ({ ...prev, [wordId]: rating }));
@@ -293,7 +295,7 @@ const Home = () => {
       if (unratedWords.length > 0) {
         await Promise.all(
           unratedWords.map((w) =>
-            axios.patch(`http://localhost:5000/api/words/${w.id}/rate`, {
+            api.patch(`/api/words/${w.id}/rate`, {
               rating: 'got_it',
             })
           )
@@ -309,8 +311,8 @@ const Home = () => {
         });
       }
 
-      const res = await axios.patch(
-        `http://localhost:5000/api/session/${session.id}/complete`
+      const res = await api.patch(
+        `/api/session/${session.id}/complete`
       );
 
       // Update session status

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import api from '../services/api';
 import {
   Wand2, Loader2, CheckCircle2, ArrowRight,
   Library, RotateCcw, Tag, AlertCircle, Pencil,
@@ -19,20 +20,18 @@ const StepBar = ({ current }) => (
         <React.Fragment key={label}>
           <div className="flex items-center gap-1.5">
             <div
-              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
-                done
-                  ? 'bg-emerald-500 text-white'
-                  : active
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${done
+                ? 'bg-emerald-500 text-white'
+                : active
                   ? 'bg-violet-600 text-white shadow-md shadow-violet-500/30'
                   : 'bg-slate-700 text-slate-500'
-              }`}
+                }`}
             >
               {done ? <CheckCircle2 size={13} /> : i + 1}
             </div>
             <span
-              className={`hidden text-xs font-medium sm:block transition-colors duration-200 ${
-                active ? 'text-white' : done ? 'text-emerald-400' : 'text-slate-500'
-              }`}
+              className={`hidden text-xs font-medium sm:block transition-colors duration-200 ${active ? 'text-white' : done ? 'text-emerald-400' : 'text-slate-500'
+                }`}
             >
               {label}
             </span>
@@ -73,7 +72,7 @@ const AddWord = () => {
     setPreviewError('');
 
     try {
-      const res = await axios.post('http://localhost:5000/api/words/preview', {
+      const res = await api.post('/api/words/preview', {
         word_text: wordText.trim(),
         context: context.trim() || undefined,
       });
@@ -94,7 +93,7 @@ const AddWord = () => {
     setConfirmError('');
 
     try {
-      const res = await axios.post('http://localhost:5000/api/words/confirm', {
+      const res = await api.post('/api/words/confirm', {
         word_text: wordText.trim(),
         context: context.trim() || undefined,
         meaning: editMeaning.trim(),

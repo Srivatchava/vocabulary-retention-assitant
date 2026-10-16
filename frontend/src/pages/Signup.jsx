@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import api from '../services/api.js';
 
 const Signup = () => {
   const [name, setName] = useState('');
@@ -9,7 +10,7 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -17,14 +18,14 @@ const Signup = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/signup', {
+      const response = await api.post('/api/auth/signup', {
         name,
         email,
         password
       });
-      
+
       login(response.data.token, response.data.user);
       navigate('/');
     } catch (err) {
@@ -41,7 +42,7 @@ const Signup = () => {
           <h2 className="text-3xl font-extrabold text-white">Create an account</h2>
           <p className="mt-2 text-sm text-slate-400">Start your vocabulary journey</p>
         </div>
-        
+
         {error && (
           <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg text-center">
             {error}
@@ -94,7 +95,7 @@ const Signup = () => {
             {loading ? 'Creating account...' : 'Sign up'}
           </button>
         </form>
-        
+
         <p className="text-center text-sm text-slate-400">
           Already have an account?{' '}
           <Link to="/login" className="font-medium text-blue-500 hover:text-blue-400 transition-colors">
