@@ -57,7 +57,7 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
           <span key={`${foundWord.id}-${match.index}`} className="relative group inline">
             <button
               onClick={() => onWordClick(foundWord.id)}
-              className={`font-semibold underline underline-offset-3 transition-all duration-200 cursor-pointer rounded px-0.5 ${ratings[foundWord.id] === 'still_learning'
+              className={`font-semibold underline underline-offset-3 transition-all duration-200 cursor-pointer rounded px-1 py-0.5 ${ratings[foundWord.id] === 'still_learning'
                 ? 'text-amber-300 decoration-amber-500/60 bg-amber-500/10'
                 : isRevealed
                   ? 'text-emerald-300 decoration-emerald-500/50'
@@ -67,51 +67,62 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
               {matchedWord}
             </button>
 
-            {/* Tooltip/popup on hover or click */}
+            {/* Tooltip/popup - Approach 1: Bottom Sheet on Mobile, Centered Popover on Desktop */}
             {isRevealed && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-slate-950 border border-slate-700 rounded-lg p-3 shadow-lg z-50 pointer-events-auto whitespace-normal max-w-xs">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <p className="text-xs text-slate-300">{foundWord.meaning}</p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onWordClick(foundWord.id);
-                    }}
-                    className="flex-shrink-0 text-slate-400 hover:text-slate-200 transition-colors"
-                    title="Close"
-                  >
-                    <X size={14} />
-                  </button>
+              <>
+                {/* Mobile tap-outside backdrop (invisible) */}
+                <div
+                  className="fixed inset-0 z-40 bg-transparent sm:hidden"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onWordClick(foundWord.id);
+                  }}
+                />
+
+                <div className="fixed inset-x-4 bottom-4 z-50 sm:absolute sm:bottom-full sm:left-1/2 sm:-translate-x-1/2 sm:mb-2 sm:w-max sm:max-w-xs bg-slate-950 border border-slate-700 rounded-xl sm:rounded-lg p-4 sm:p-3 shadow-2xl sm:shadow-lg pointer-events-auto whitespace-normal">
+                  <div className="flex items-start justify-between gap-2 mb-2.5 sm:mb-2">
+                    <p className="text-sm sm:text-xs text-slate-200 sm:text-slate-300 leading-relaxed">{foundWord.meaning}</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onWordClick(foundWord.id);
+                      }}
+                      className="flex-shrink-0 text-slate-400 hover:text-slate-200 transition-colors p-1 -mr-1 -mt-1 sm:p-0 sm:mr-0 sm:mt-0"
+                      title="Close"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  {/* Rating button - Only Still Learning */}
+                  {!rating && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRate(foundWord.id, 'still_learning');
+                      }}
+                      className="w-full text-sm sm:text-xs px-3 sm:px-2.5 py-2.5 sm:py-1.5 bg-amber-600/25 hover:bg-amber-600/40 text-amber-300 rounded-lg border border-amber-500/30 transition-all flex items-center justify-center gap-1.5 font-medium hover:border-amber-400/50 cursor-pointer"
+                    >
+                      <Brain size={14} />
+                      Still learning
+                    </button>
+                  )}
+
+                  {rating === 'still_learning' && (
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-amber-300 bg-amber-950/40 border border-amber-500/20 rounded-lg sm:rounded px-2.5 py-2 sm:py-1">
+                      <Brain size={13} />
+                      Flagged as still learning
+                    </div>
+                  )}
+
+                  {rating === 'got_it' && (
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 rounded-lg sm:rounded px-2.5 py-1">
+                      <CheckCircle2 size={13} />
+                      Marked as known (Got it)
+                    </div>
+                  )}
                 </div>
-
-                {/* Rating button - Only Still Learning */}
-                {!rating && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRate(foundWord.id, 'still_learning');
-                    }}
-                    className="w-full text-xs px-2.5 py-1.5 bg-amber-600/25 hover:bg-amber-600/40 text-amber-300 rounded-lg border border-amber-500/30 transition-all flex items-center justify-center gap-1.5 font-medium hover:border-amber-400/50 cursor-pointer"
-                  >
-                    <Brain size={13} />
-                    Still learning
-                  </button>
-                )}
-
-                {rating === 'still_learning' && (
-                  <div className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-950/40 border border-amber-500/20 rounded px-2.5 py-1">
-                    <Brain size={13} />
-                    Flagged as still learning
-                  </div>
-                )}
-
-                {rating === 'got_it' && (
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 rounded px-2.5 py-1">
-                    <CheckCircle2 size={13} />
-                    Marked as known (Got it)
-                  </div>
-                )}
-              </div>
+              </>
             )}
           </span>
         );
@@ -129,14 +140,14 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-slate-700/60 bg-slate-800/40 p-6">
+    <div className="space-y-3 sm:space-y-4 rounded-2xl border border-slate-700/60 bg-slate-800/40 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
           Paragraph {index + 1}
         </span>
         {wordChips.length > 0 && (
-          <div className="flex flex-wrap justify-end gap-1.5">
+          <div className="flex flex-wrap gap-1.5 sm:justify-end">
             {wordChips.map((w) => {
               const rating = ratings[w.id];
               const isStillLearning = rating === 'still_learning';
@@ -163,9 +174,7 @@ const ParagraphCard = ({ index, paragraph, words, revealedWords, ratings, onWord
       {/* Paragraph text with highlighted words */}
       <p className="text-sm leading-7 text-slate-300">{buildParagraph()}</p>
 
-      <div className="text-xs text-slate-500 pt-2">
-        Click highlighted words to reveal meanings
-      </div>
+
     </div>
   );
 };
@@ -238,11 +247,9 @@ const Home = () => {
     }
   };
 
-  // Handle clicking on a word to reveal its meaning
-  //need to change this
+  // Handle clicking on a word to reveal its meaning,shows only one meaning at a time 
   const handleWordClick = (wordId) => {
     setRevealedWords((prev) => ({
-      ...prev,
       [wordId]: !prev[wordId],
     }));
   };
@@ -342,17 +349,14 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      <div className="mx-auto max-w-5xl px-6 py-10 space-y-10">
+      <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 sm:px-6 sm:py-10 sm:space-y-10">
 
         {/* Welcome */}
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
               Practice
             </h1>
-            <p className="mt-1 text-sm text-slate-400">
-              {user?.email} · Today's vocabulary session
-            </p>
           </div>
           <Link
             to="/add"
@@ -364,7 +368,7 @@ const Home = () => {
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <StatCard
             icon={Flame}
             label="Day Streak"
@@ -388,23 +392,7 @@ const Home = () => {
           />
         </div>
 
-        {/* Quick links to History and Stats */}
-        {/* <div className="flex gap-3 justify-center">
-          <Link
-            to="/history"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700/60 hover:border-slate-600 hover:bg-slate-800 text-slate-300 hover:text-white transition-all text-sm font-medium"
-          >
-            <History size={16} />
-            View History
-          </Link>
-          <Link
-            to="/stats"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700/60 hover:border-slate-600 hover:bg-slate-800 text-slate-300 hover:text-white transition-all text-sm font-medium"
-          >
-            <BarChart3 size={16} />
-            View Stats
-          </Link>
-        </div> */}
+
 
         {/* Session area */}
         {isLoading && (
@@ -416,7 +404,7 @@ const Home = () => {
 
         {!isLoading && !session && (
           // ── No session yet ────────────────────────────────────────────────
-          <div className="relative overflow-hidden rounded-2xl border border-dashed border-slate-600/60 bg-slate-800/30 p-12 text-center">
+          <div className="relative overflow-hidden rounded-2xl border border-dashed border-slate-600/60 bg-slate-800/30 p-6 sm:p-12 text-center">
             <div className="absolute inset-0 -z-10 animate-pulse rounded-2xl bg-gradient-to-br from-violet-900/20 via-transparent to-indigo-900/20" />
             <div className="flex flex-col items-center gap-5">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/30">
@@ -440,7 +428,7 @@ const Home = () => {
               {stats.total === 0 ? (
                 <Link
                   to="/add"
-                  className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:bg-violet-500"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:bg-violet-500"
                 >
                   <PlusCircle size={15} />
                   Add your first word
@@ -450,7 +438,7 @@ const Home = () => {
                 <button
                   onClick={handleGenerate}
                   disabled={generating}
-                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:from-violet-500 hover:to-indigo-500 disabled:opacity-60"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:from-violet-500 hover:to-indigo-500 disabled:opacity-60"
                 >
                   {generating ? (
                     <>
@@ -472,17 +460,17 @@ const Home = () => {
         {!isLoading && session && (
           // ── Session exists — show paragraphs ─────────────────────────────
           <div className="space-y-5 animate-fade-slide-in">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-base sm:text-lg font-semibold text-white">
                   Today's Practice Session
                 </h2>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  {session.session_date} · Click words to reveal meanings
+                  Click words to reveal meanings
                 </p>
               </div>
               <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${session.completion_status
+                className={`self-start sm:self-auto rounded-full px-3 py-1 text-xs font-medium ${session.completion_status
                   ? 'bg-emerald-900/30 text-emerald-400'
                   : 'bg-slate-700 text-slate-400'
                   }`}
@@ -509,8 +497,8 @@ const Home = () => {
 
             {/* Completion section */}
             {!session.completion_status && (
-              <div className="space-y-4 rounded-xl border border-slate-700/40 bg-slate-800/30 p-6">
-                <div className="flex items-center justify-between">
+              <div className="space-y-4 rounded-xl border border-slate-700/40 bg-slate-800/30 p-4 sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="text-sm font-semibold text-white">
                       Practice Session
@@ -519,7 +507,7 @@ const Home = () => {
                       Finished reading? Unflagged words will automatically be marked as understood (<span className="text-emerald-400 font-medium">Got it!</span>).
                     </p>
                   </div>
-                  <div>
+                  <div className="self-start sm:self-auto">
                     {Object.values(ratings).filter((r) => r === 'still_learning').length > 0 ? (
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-950/60 border border-amber-500/40 text-amber-300">
                         {Object.values(ratings).filter((r) => r === 'still_learning').length} flagged for review
@@ -549,7 +537,7 @@ const Home = () => {
                 <button
                   onClick={handleCompleteSession}
                   disabled={completingSession || session.completion_status}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3.5 sm:py-3 text-base sm:text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {completingSession ? (
                     <>
@@ -567,7 +555,7 @@ const Home = () => {
             )}
 
             {session.completion_status && (
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-900/10 p-6 text-center">
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-900/10 p-4 sm:p-6 text-center">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <CheckCircle2 size={20} className="text-emerald-400" />
                   <h3 className="text-lg font-semibold text-white">Session Completed!</h3>

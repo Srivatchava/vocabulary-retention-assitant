@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Search, Filter, PlusCircle, BookOpen, Loader2 } from 'lucide-react';
+import { Search, Filter, PlusCircle, BookOpen, Loader2, ArrowLeft } from 'lucide-react';
 import WordCard from '../components/WordCard';
 
 const FAMILIARITY_TABS = ['All', 'New', 'Learning', 'Familiar', 'Mastered'];
@@ -54,22 +54,31 @@ const MyWords = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      <div className="mx-auto max-w-6xl px-6 py-10 space-y-8">
-
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10 space-y-6 sm:space-y-8">
         {/* Page header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">My Vocabulary</h1>
-            <p className="mt-1 text-sm text-slate-400">
-              {words.length} {words.length === 1 ? 'word' : 'words'} saved
-            </p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 sm:gap-4">
+            <Link
+              to="/"
+              className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 hover:border-slate-500 hover:bg-slate-700 hover:text-white transition-all shrink-0 cursor-pointer"
+              title="Back to Home"
+            >
+              <ArrowLeft size={18} />
+            </Link>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">My Vocabulary</h1>
+              <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">
+                {words.length} {words.length === 1 ? 'word' : 'words'} saved
+              </p>
+            </div>
           </div>
+
           <Link
             to="/add"
-            className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition-all duration-200 hover:bg-violet-500"
+            className="flex items-center gap-2 rounded-xl bg-violet-600 px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition-all duration-200 hover:bg-violet-500 shrink-0"
           >
             <PlusCircle size={15} />
-            Add word
+            <span>Add word</span>
           </Link>
         </div>
 

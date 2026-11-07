@@ -5,7 +5,7 @@ import api from '../services/api';
 import {
   Wand2, Loader2, CheckCircle2, ArrowRight,
   Library, RotateCcw, Tag, AlertCircle, Pencil,
-  Save, ChevronRight,
+  Save, ChevronRight, ArrowLeft,
 } from 'lucide-react';
 
 // Step indicators
@@ -122,14 +122,23 @@ const AddWord = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      <div className="mx-auto max-w-2xl px-6 py-12 space-y-8">
+      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 space-y-6 sm:space-y-8">
 
-        {/* Page header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Add a Word</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Drop in any word — AI resolves its meaning, you confirm before it's saved.
-          </p>
+        {/* Page header with Back to Home button */}
+        <div className="flex items-center gap-3.5 sm:gap-4">
+          <Link
+            to="/"
+            className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 hover:border-slate-500 hover:bg-slate-700 hover:text-white transition-all shrink-0 cursor-pointer"
+            title="Back to Home"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Add a Word</h1>
+            <p className="mt-1 text-xs sm:text-sm text-slate-400">
+              Drop in any word — AI resolves its meaning, you confirm before it's saved.
+            </p>
+          </div>
         </div>
 
         {/* Step bar */}
