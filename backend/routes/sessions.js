@@ -1,11 +1,12 @@
 import express from 'express';
-import { GoogleGenAI } from '@google/genai';
+import { generateAIResponse } from '../services/aiService.js';
+// import { GoogleGenAI } from '@google/genai';
 import db from '../db.js';
 import { authenticate } from '../middleware/auth.js';
 import { markReminderCompleted } from '../services/cronService.js';
 
 const router = express.Router();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const WORDS_PER_PARAGRAPH = 4;
 
@@ -224,12 +225,15 @@ Respond ONLY with valid JSON — no markdown, no explanation:
   "paragraphs": ["<paragraph 1>", "<paragraph 2>", "<paragraph 3>"]
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
-      contents: prompt,
-    });
+    // const response = await ai.models.generateContent({
+    //   model: 'gemini-3.1-flash-lite',
+    //   contents: prompt,
+    // });
 
-    const rawText = response.text.trim();
+
+    const text = await generateAIResponse(prompt);
+
+    const rawText = text.trim();
     const jsonText = rawText
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```$/, '')

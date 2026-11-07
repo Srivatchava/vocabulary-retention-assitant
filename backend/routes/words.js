@@ -3,6 +3,8 @@ import { GoogleGenAI } from '@google/genai';
 import db from '../db.js';
 import { authenticate } from '../middleware/auth.js';
 
+import { generateAIResponse } from '../services/aiService.js';
+
 const router = express.Router();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -44,12 +46,16 @@ Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
 }`;
 
     // Call Gemini
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-lite',
-      contents: prompt,
-    });
+    // const response = await ai.models.generateContent({
+    //   model: 'gemini-3.1-flash-lite',
+    //   contents: prompt,
+    // });
 
-    const rawText = response.text.trim();
+    //ai service 
+    const text = await generateAIResponse(prompt);
+
+
+    const rawText = text.trim();
 
     // Strip markdown code fences if present
     const jsonText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
