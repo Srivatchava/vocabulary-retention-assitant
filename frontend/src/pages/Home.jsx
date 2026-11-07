@@ -459,7 +459,7 @@ const Home = () => {
 
         {!isLoading && session && (
           // ── Session exists — show paragraphs ─────────────────────────────
-          <div className="space-y-5 animate-fade-slide-in">
+          <div className="space-y-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-white">

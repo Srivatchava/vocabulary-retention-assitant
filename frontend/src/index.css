@@ -20,10 +20,10 @@ body {
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
 .animate-fade-slide-in {
-  animation: fadeSlideIn 0.4s ease-out both;
+  animation: fadeSlideIn 0.4s ease-out forwards;
 }
